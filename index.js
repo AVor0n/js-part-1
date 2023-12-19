@@ -1,3 +1,5 @@
+import { calculateRoute } from './solution.js';
+
 // Загрузка данных через await
 async function getDataAsync(url) {
     // https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
@@ -121,7 +123,7 @@ const output = document.getElementById('output');
         return;
     }
     output.textContent = '';
-
+    console.log(countriesData);
     // Заполняем список стран для подсказки в инпутах
     Object.keys(countriesData)
         .sort((a, b) => countriesData[b].area - countriesData[a].area)
@@ -135,10 +137,31 @@ const output = document.getElementById('output');
     toCountry.disabled = false;
     submit.disabled = false;
 
-    form.addEventListener('submit', (event) => {
+    const getCountryCodeByName = (name) => {
+        const country = Object.values(countriesData).find((countryInfo) => countryInfo.name.common === name);
+        return country?.cca3 || null;
+    };
+
+    form.addEventListener('submit', async (event) => {
         event.preventDefault();
-        // TODO: Вывести, откуда и куда едем, и что идёт расчёт.
-        // TODO: Рассчитать маршрут из одной страны в другую за минимум запросов.
-        // TODO: Вывести маршрут и общее количество запросов.
+
+        const fromCountryCode = getCountryCodeByName(fromCountry.value);
+        const toCountryCode = getCountryCodeByName(toCountry.value);
+
+        if (!fromCountryCode || !toCountryCode) {
+            throw new Error(`Не удалось найти код для стран: ${fromCountry.value} -> ${toCountry.value}`);
+        }
+        console.log(fromCountryCode, toCountryCode);
+        try {
+            const { route, requestCount } = await calculateRoute(fromCountryCode, toCountryCode);
+            console.log(route);
+            // Вывод маршрута
+            const routeText = route.join(' → ');
+            output.textContent = `Маршрут: ${routeText}`;
+            // Вывод количества запросов
+            output.textContent += `\nПонадобилось всего ${requestCount} запросов!`;
+        } catch (error) {
+            output.textContent = `Ошибка: ${error.message}`;
+        }
     });
 })();
